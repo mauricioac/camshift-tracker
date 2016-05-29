@@ -24,7 +24,6 @@ public:
   MatND rhist;
   Mat mask;
   Mat rhsv;
-  int framesVivo;
 
   Objeto(Mat imagem, Rect r) {
     cvtColor(imagem(r), rhsv, CV_BGR2HSV);
@@ -33,7 +32,6 @@ public:
     float range[] = { 0, 180};
     const float *ranges[] = { range };
     int channels[] = {0};
-    framesVivo = 0;
 
     calcHist( &rhsv, 1, channels, Mat(), rhist, 1, &rhistsz, ranges, true, false );
     normalize(rhist,rhist,0,255,NORM_MINMAX, -1, Mat() );
@@ -56,20 +54,18 @@ public:
     calcBackProject(&fhsv,1,channels,rhist,fbproj,ranges,1,true);
     // imshow("aaaa", fbproj);
     // waitKey(2000);
-    threshold(fbproj, fbthr, 220, 1,CV_THRESH_TOZERO);
+    threshold(fbproj, fbthr, 200, 1,CV_THRESH_TOZERO);
     normalize(fbthr,fbthr,0,255,NORM_MINMAX, -1, Mat() );
     // imshow("aaaa", fbthr);
     // waitKey(2000);
     RotatedRect rect = CamShift(fbthr,wind,TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 5, 0.1));
-    wind = rect.boundingRect();
+    // wind = rect.boundingRect();
 
     Point2f vertices[4];
     rect.points(vertices);
     for (int i = 0; i < 4; i++) {
       line(image, vertices[i], vertices[(i+1)%4], Scalar(0,255,0));
     }
-
-    framesVivo++;
   }
 };
 
@@ -191,8 +187,9 @@ int main(int argc, char *argv[]) {
 
   img = frame.clone();
   namedWindow("aaaa", WINDOW_AUTOSIZE);
+  namedWindow("binario", WINDOW_AUTOSIZE);
 
-  Mat elemento = getStructuringElement(MORPH_RECT, Size(3, 7), Point(1,3) );
+  Mat elemento = getStructuringElement(MORPH_RECT, Size(3, 1), Point(1,0) );
 
   pegaROI();
 
@@ -209,9 +206,9 @@ int main(int argc, char *argv[]) {
 
     // remove sombras
     threshold(mascara_background, binaryImg, 50, 255, CV_THRESH_BINARY);
-
-    // for (int i = 0; i < 10; i++)
-    //   morphologyEx(binaryImg, binaryImg, CV_MOP_CLOSE, elemento);
+    
+    for (int i = 0; i < 1; i++)
+      morphologyEx(binaryImg, binaryImg, CV_MOP_DILATE, elemento);
 
     Mat binOrig = binaryImg.clone();
 
@@ -241,10 +238,10 @@ int main(int argc, char *argv[]) {
         continue;
 
       bool achou = false;
-      for (int j = 0; j < objetos.size(); j++) {
+      for (int j = 0; j < (int) objetos.size(); j++) {
         Rect intersecao = bb & objetos[j].wind;
 
-        if (intersecao.height > 7 || intersecao.width > 10) {
+        if (intersecao.height > 6 || intersecao.width > 5) {
           achou = true;
         }
       }
@@ -253,26 +250,13 @@ int main(int argc, char *argv[]) {
         continue;
       }
 
-        // rectangle(frame, bb, Scalar(255, 0, 128), 2);
       if (bb.y >= roi.y && bb.y <= roi.y + 10) {
-        // cout << "novo?" << endl;
-        // imshow("aaaa", crop);
-        // waitKey(2000);
         Objeto o(crop, bb);
         objetos.push_back(o);
       }
     }
 
-    // rectangle(frame, roi, Scalar(255, 0, 0), 2);
-
     vector<Objeto> novos_objetos;
-
-    if (objetos.size() > 0) {
-
-      // imshow("aaaa", crop);
-      // waitKey(4000);
-    }
-
     for (int i = 0; i < (int) objetos.size(); i++) {
       objetos[i].track(crop, frame);
 
@@ -300,8 +284,9 @@ int main(int argc, char *argv[]) {
     putText(frame, text, textOrg, fontFace, fontScale, Scalar(0, 0, 255), thickness,8);
 
     imshow("aaaa", frame);
+    imshow("binario", binOrig);
 
-    if (waitKey(30) == 27) {
+    if (waitKey(10) == 27) {
       break;
     }
   }
