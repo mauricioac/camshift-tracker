@@ -58,7 +58,7 @@ public:
     normalize(fbthr,fbthr,0,255,NORM_MINMAX, -1, Mat() );
     // imshow("aaaa", fbthr);
     // waitKey(2000);
-    RotatedRect rect = CamShift(fbthr,wind,TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 5, 0.1));
+    RotatedRect rect = CamShift(fbthr,wind,TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 5, 0.001));
     // wind = rect.boundingRect();
 
     Point2f vertices[4];
@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
 
     // remove sombras
     threshold(mascara_background, binaryImg, 50, 255, CV_THRESH_BINARY);
-    
+
     for (int i = 0; i < 1; i++)
       morphologyEx(binaryImg, binaryImg, CV_MOP_DILATE, elemento);
 
@@ -234,14 +234,16 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < (int) contornos.size(); i++) {
       Rect bb = boundingRect(contornos[i]);
 
-      if (bb.width <= 10 || bb.height <= 10)
+      if (bb.width <= 10 || bb.height <= 7)
         continue;
+
+      rectangle(frame, bb, Scalar(255, 0, 0));
 
       bool achou = false;
       for (int j = 0; j < (int) objetos.size(); j++) {
         Rect intersecao = bb & objetos[j].wind;
 
-        if (intersecao.height > 6 || intersecao.width > 5) {
+        if (intersecao.height > 8 || intersecao.width > 5) {
           achou = true;
         }
       }
