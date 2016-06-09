@@ -1,2 +1,0 @@
-Tracker usando CamShift
-=======================
